@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe</title>
+    <link rel="stylesheet" href="tictac.css">
+</head>
+<body>
+    <div class="game-container">
+        <h1>TIC TAC TOE</h1>
+        <div class="game-board" id="gameBoard">
+            <div class="cell" data-index="0"></div>
+            <div class="cell" data-index="1"></div>
+            <div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div>
+            <div class="cell" data-index="4"></div>
+            <div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div>
+            <div class="cell" data-index="7"></div>
+            <div class="cell" data-index="8"></div>
+            <div class="win-line" id="winLine"></div>
+        </div>
+        <div class="game-info">
+            <p id="gameStatus">Player X's turn</p>
+            <button id="resetButton">Reset Game</button>
+        </div>
+        <div class="mode-selector">
+            <button id="playerMode">Player vs Player</button>
+            <button id="aiMode">Player vs AI</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const cells = document.querySelectorAll('.cell');
+            const gameStatus = document.getElementById('gameStatus');
+            const resetButton = document.getElementById('resetButton');
+            const playerModeButton = document.getElementById('playerMode');
+            const aiModeButton = document.getElementById('aiMode');
+            
+            
+            const gradients = [
+                ['#74ebd5', '#ACB6E5'],
+                ['#ff7e5f', '#feb47b'],
+                ['#6a11cb', '#2575fc'],
+                ['#43cea2', '#185a9d'],
+                ['#ff6a00', '#ee0979']
+            ];
+
+            let currentGradientIndex = 0;
+            const body = document.body;
+
+            function changeGradient() {
+                currentGradientIndex = (currentGradientIndex + 1) % gradients.length;
+                const newGradient = `linear-gradient(135deg, ${gradients[currentGradientIndex][0]} 0%, ${gradients[currentGradientIndex][1]} 100%)`;
+                body.style.background = newGradient;
+                body.style.backgroundSize = '200% 200%';
+            }
+
+            setInterval(changeGradient, 5000);  // Change gradient every 5 seconds
+
+
+            let board = Array(9).fill('');
+            let currentPlayer = 'X';
+            let gameActive = true;
+            let isVsAI = false;
+
+            const winningCombinations = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6]
+            ];
+
+            cells.forEach(cell => {
+                cell.addEventListener('click', handleCellClick);
+            });
+
+            resetButton.addEventListener('click', resetGame);
+            playerModeButton.addEventListener('click', () => setGameMode(false));
+            aiModeButton.addEventListener('click', () => setGameMode(true));
+
+            function handleCellClick(event) {
+                const clickedCell = event.target;
+                const clickedIndex = clickedCell.getAttribute('data-index');
+
+                if (board[clickedIndex] !== '' || !gameActive) return;
+
+                updateBoard(clickedIndex, currentPlayer);
+                checkResult();
+
+                if (gameActive && isVsAI && currentPlayer === 'O') {
+                    setTimeout(aiMove, 500);  // AI makes a move after some delay
+                }
+            }
+
+            function updateBoard(index, player) {
+                board[index] = player;
+                cells[index].textContent = player;
+                currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+                gameStatus.textContent = `${currentPlayer}'s turn`;
+            }
+
+            function checkResult() {
+                let roundWon = false;
+                let winningCombo = [];
+
+                for (let i = 0; i < winningCombinations.length; i++) {
+                    const [a, b, c] = winningCombinations[i];
+                    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                        roundWon = true;
+                        winningCombo = [a, b, c];
+                        break;
+                    }
+                }
+
+                if (roundWon) {
+                    gameStatus.textContent = `${currentPlayer === 'X' ? 'O' : 'X'} wins!`;
+                    gameActive = false;
+                    showWinningLine(winningCombo);
+                    return;
+                }
+
+                if (!board.includes('')) {
+                    gameStatus.textContent = `Draw!`;
+                    gameActive = false;
+                }
+            }
+
+            function showWinningLine(combo) {
+                const line = document.getElementById('winLine');
+                
+                // Winning combinations and their corresponding line styles
+                const winningLineStyles = {
+                    0: { top: "50px", left: "0", width: "300px", rotate: "0deg" },    // Top row
+                    1: { top: "150px", left: "0", width: "300px", rotate: "0deg" },   // Middle row
+                    2: { top: "250px", left: "0", width: "300px", rotate: "0deg" },   // Bottom row
+                    3: { top: "0", left: "50px", width: "300px", rotate: "90deg" },   // Left column
+                    4: { top: "0", left: "150px", width: "300px", rotate: "90deg" },  // Middle column
+                    5: { top: "0", left: "250px", width: "300px", rotate: "90deg" },  // Right column
+                    6: { top: "0", left: "0", width: "424px", rotate: "45deg" },      // Diagonal left-to-right
+                    7: { top: "0", left: "0", width: "424px", rotate: "-45deg" }      // Diagonal right-to-left
+                };
+
+                // Determine which winning combination is hit and apply the corresponding styles
+                const combinationIndex = winningCombinations.findIndex(comboArray => 
+                    comboArray[0] === combo[0] && comboArray[1] === combo[1] && comboArray[2] === combo[2]
+                );
+                
+                // Apply styles and animate the line
+                const style = winningLineStyles[combinationIndex];
+                line.style.top = style.top;
+                line.style.left = style.left;
+                line.style.transform = `rotate(${style.rotate})`;
+                
+                // Animate the line's width (display the winning line)
+                setTimeout(() => {
+                    line.style.width = style.width;
+                }, 100);
+            }
+
+            function aiMove() {
+                let availableCells = board.map((value, index) => value === '' ? index : null).filter(value => value !== null);
+                let randomIndex = availableCells[Math.floor(Math.random() * availableCells.length)];
+                updateBoard(randomIndex, 'O');
+                checkResult();
+            }
+
+            function resetGame() {
+                board.fill('');
+                cells.forEach(cell => cell.textContent = '');
+                gameActive = true;
+                currentPlayer = 'X';
+                gameStatus.textContent = `Player X's turn`;
+            }
+
+            function setGameMode(vsAI) {
+                isVsAI = vsAI;
+                resetGame();
+                if (vsAI) {
+                    gameStatus.textContent = `Player vs AI: Player X's turn`;
+                } else {
+                    gameStatus.textContent = `Player vs Player: Player X's turn`;
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
